@@ -1,0 +1,11 @@
+locations:
+  - location_name: azure_demo
+    code_source:
+      package_name: azure_demo
+    # build:
+    #   directory: ./azure_demo
+  - location_name: demo_workflow_c
+    code_source:
+      package_name: azure_demo
+      build:
+        directory: ./demo-workflow-c
