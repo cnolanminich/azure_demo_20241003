@@ -1,4 +1,4 @@
-name: Serverless Branch Deployments
+name: Serverless Branch Deployments 
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
