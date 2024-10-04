@@ -1,6 +1,8 @@
 import dagster as dg
 from demo_workflow_c import assets  # type: ignore
 from datetime import datetime, timedelta
+from dagster_databricks import databricks_client
+from databricks.sdk import WorkspaceClient
 
 all_assets = dg.load_assets_from_modules([assets])
 
@@ -48,9 +50,13 @@ def wait_for_both_upstreams_sensor(context):
     # Both upstream jobs have completed successfully in the past day, trigger the downstream job
     return dg.RunRequest(run_key=f"{upstream_1_runs[0].run_id}-{upstream_2_runs[0].run_id}", job_name="workflow_c")
 
+
 # Add the sensor to the Definitions object
 defs = dg.Definitions(
     assets = [*all_assets],
     jobs=[workflow_c],
-    sensors=[wait_for_both_upstreams_sensor]
+    sensors=[wait_for_both_upstreams_sensor],
+    resources={"pipes_databricks_client": WorkspaceClient(
+    host=dg.EnvVar("DATABRICKS_HOST").get_value(),
+    token=dg.EnvVar("DATABRICKS_TOKEN").get_value())},
 )

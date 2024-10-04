@@ -141,32 +141,29 @@ class AzureFunctionOverrideConfig(dg.Config):
 @dg.multi_asset(  
         group_name="workflow_b",
         specs=[
-            dg.AssetSpec("task_1__invoke_azure_function", skippable=False),
+            dg.AssetSpec("task_1__invoke_azure_function", skippable=True),
             dg.AssetSpec("task_2__invoke_workflow_d", deps=["task_1__invoke_azure_function"], skippable=True),
             dg.AssetSpec("task_3__databricks_notebook_b1_north_eu", deps=["task_1__invoke_azure_function"], skippable=True),
             ],
+        can_subset=True,
         required_resource_keys={"azure_function", "databricks"},
-        #resource_defs={"azure_function": AzureFunctionResource},
-        # outs={"task_1__invoke_azure_function": dg.AssetOut(is_required=True),
-        #       "task_2__invoke_workflow_d": dg.AssetOut(is_required=False),
-        # }
 )
-# , 
 def workflow_b_assets(context: dg.AssetExecutionContext, config:AzureFunctionOverrideConfig) -> None:
-    task_1_result = task_1__invoke_azure_function(context, azure_function=context.resources.azure_function)
     
-    yield dg.MaterializeResult(asset_key="task_1__invoke_azure_function", metadata={"value": task_1_result})
+    if dg.AssetKey("task_1__invoke_azure_function") in context.op_execution_context.selected_asset_keys:
+        task_1_result = task_1__invoke_azure_function(context, azure_function=context.resources.azure_function)
+        yield dg.MaterializeResult(asset_key="task_1__invoke_azure_function", metadata={"value": task_1_result})
 
     if config.simulated_azure_function_return_value != 3:
         task_1_result = config.simulated_azure_function_return_value
     task_2_result = None
     task_3_result = None
 
-    if task_1_result == 1:
+    if task_1_result == 1 and dg.AssetKey("task_2__invoke_workflow_d") in context.op_execution_context.selected_asset_keys:
         task_2_result = task_2__invoke_workflow_d(context)
         yield dg.MaterializeResult(asset_key="task_2__invoke_workflow_d")
-    
-    if task_1_result == 0:
+
+    if task_1_result == 0 and dg.AssetKey("task_3__databricks_notebook_b1_north_eu") in context.op_execution_context.selected_asset_keys:
         task_3_result = task_3__databricks_notebook_b1_north_eu(context)
         yield dg.MaterializeResult(asset_key="task_3__databricks_notebook_b1_north_eu")
 
