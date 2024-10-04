@@ -10,10 +10,6 @@ def launch_and_poll_databricks_job(context, client, job_id):
 
     run = jobs_service.run_now(
         job_id=job_id,
-        # original job
-        #917365194082799
-        # in Azure
-        #185516457983272,
     )
     run_id = run.bind()["run_id"]
 
@@ -31,7 +27,6 @@ def launch_and_poll_databricks_job(context, client, job_id):
         max_wait_time_sec=600,
     )
 
-#todo add headers and add org
 def launch_and_poll_job(context, job_name):
     token = os.getenv("GRAPHQL_JOB_AGENT_TOKEN")
     url="https://christians-new-org.dagster.cloud/"
@@ -39,9 +34,7 @@ def launch_and_poll_job(context, job_name):
     url=f"{url}/graphql",
     headers={"Dagster-Cloud-Api-Token": token}
 )   
-    client = DagsterGraphQLClient(hostname=url, port_number=443, transport=transport)# transport, port_number=443)
-    #client = DagsterGraphQLClient(url, transport, port_number=443)
-    #  "https://christians-new-org.dagster.cloud/")#, port_number=3000)
+    client = DagsterGraphQLClient(hostname=url, port_number=443, transport=transport)
     # Launch the job
     launch_response = client.submit_job_execution(job_name=job_name)
     context.log.info(f"Launch response: {launch_response}") 

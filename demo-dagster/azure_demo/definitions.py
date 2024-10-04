@@ -1,4 +1,4 @@
-from dagster import Definitions, load_assets_from_modules, EnvVar
+from dagster import Definitions, load_assets_from_modules, EnvVar, AssetKey, AssetSpec
 
 from azure_demo import assets
 from azure_demo.resources import AzureFunctionResource, AzureDataFactoryResource, adls2_resource, databricks_client_instance, pipes_databricks_client
@@ -10,13 +10,33 @@ import uuid
 from http import client
 from typing import cast
 
-from dagster_powerbi import PowerBIServicePrincipal, PowerBIToken, PowerBIWorkspace
+from dagster_powerbi import PowerBIServicePrincipal, PowerBIToken, PowerBIWorkspace, DagsterPowerBITranslator
 
 
 all_assets = load_assets_from_modules([assets])
 
+#, deps=[*upstream.deps]
+ #, AssetKey("task_2__invoke_workflow_d"), AssetKey("task_3__databricks_notebook_b1_north_eu")
+class MyCustomPowerBITranslator(DagsterPowerBITranslator):
+    def get_dashboard_spec(self, data) -> AssetSpec:
+        upstream = super().get_dashboard_spec(data)
+        
+        # example of replacing the group_name for a powerbi asset
+        if upstream.key == AssetKey(["dashboard","hooli_example"]):
+            print(*upstream.deps)
+            return upstream._replace(group_name="workflow_b", deps=[*upstream.deps])
+        return upstream
 
+    # def get_dashboard_spec(self, data) -> AssetSpec:
+    #     upstream = super().get_dashboard_spec(data)
+        
+    #     #, AssetKey("task_2__invoke_workflow_d"), AssetKey("task_3__databricks_notebook_b1_north_eu")
+    #     if upstream.key == AssetKey(["dashboard","hooli_example"]):
+    #         print(*upstream.deps)
+    #         return upstream._replace(deps=[*upstream.deps, AssetKey("task_2__invoke_workflow_d")])
 
+    #     return upstream
+    
 # Connect using a service principal
 resource = PowerBIWorkspace(
     credentials=PowerBIServicePrincipal(
@@ -47,4 +67,4 @@ initial_definitions = Definitions(
 },
 )
 
-defs = Definitions.merge(initial_definitions, resource.build_defs())
+defs = Definitions.merge(initial_definitions, resource.build_defs(dagster_powerbi_translator=MyCustomPowerBITranslator))

@@ -2,7 +2,6 @@ import dagster as dg
 import requests
 from azure.identity import ClientSecretCredential
 from azure.mgmt.datafactory import DataFactoryManagementClient
-from azure.mgmt.datafactory.models import CreateRunResponse
 import time
 from dagster_azure.adls2 import ADLS2Resource, ADLS2SASToken
 from dagster_databricks import databricks_client
@@ -55,7 +54,7 @@ class AzureDataFactoryResource(dg.ConfigurableResource):
     def get_run(self, resource_group_name, factory_name, run_id):
         credential = ClientSecretCredential(self.tenant_id, self.client_id, self.client_secret)
         client = DataFactoryManagementClient(credential, self.subscription_id)
-        run_response = self.client.pipeline_runs.get(resource_group_name, factory_name, run_id)
+        run_response = client.pipeline_runs.get(resource_group_name, factory_name, run_id)
         return run_response
     
     def cancel_run(self, resource_group_name, factory_name, run_id):

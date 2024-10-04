@@ -16,11 +16,8 @@ def task_1__invoke_adf_pipeline(context: dg.AssetExecutionContext,
     run = adf_client.create_run("DefaultResourceGroup-CCAN", "datafactoryjhcklxpqiqeg4", "ArmtemplateSampleCopyPipeline")
     context.log.info(f"ADF pipeline run: {run}")   
     run_response = adf_client.wait_for_run("DefaultResourceGroup-CCAN", "datafactoryjhcklxpqiqeg4", run.run_id)
-    #context.log.info(f"ADF pipeline run status: {run_response.status}")
     return run_response
 
-# Upon successful completion of the ADF pipeline, Task 2 invokes an Azure Databricks Workflow. 
-# Databricks Workflow should be in Databricks Workspace A1 and in the East US region.
 @dg.asset(
         deps=[task_1__invoke_adf_pipeline],
         group_name="workflow_a",
@@ -32,9 +29,6 @@ def task_2__invoke_databricks_workflow(context: dg.AssetExecutionContext) -> Non
 
 
 
-# In parallel to Task 2, also upon successful completion of the ADF pipeline, 
-# Task 3 should run a Databricks Notebook using ad hoc job compute 
-# (i.e., where job doesn't already exist).
 @dg.asset(
         deps=[task_1__invoke_adf_pipeline],
         group_name="workflow_a"
@@ -81,12 +75,7 @@ def adls2_file_asset(context: dg.AssetExecutionContext,
                       adls2_resource: ADLS2Resource) -> None:
     # List files in the specified directory
     service_client = adls2_resource.adls2_client
-    # service_client = DataLakeServiceClient(
-    # account_url="https://storagejhcklxpqiqeg4.dfs.core.windows.net",
-    # credential=os.getenv("AZURE_ADLS2_SAS_TOKEN")
-    # )
     file_system_client = service_client.get_file_system_client("test-container")
-    #file_system_client = adls2_resource.adls2_client.get_file_system_client("test-container")
     paths = file_system_client.get_paths()
     for path in paths:
         context.log.info(f"Path: {path.name}, Last modified: {path.last_modified}")
@@ -175,11 +164,6 @@ def workflow_b_assets(context: dg.AssetExecutionContext, config:AzureFunctionOve
         )
     )
 
-# used in workflow_b dependent on the successful completion of either Task 2 or Task 3. 
-# Task 4 should trigger the refresh of a PowerBI report.
-@dg.asset
-def task_4__powerbi_report(context: dg.AssetExecutionContext) -> None:
-    context.log.info("Invoking PowerBI report")
 
 
 @dg.asset(
@@ -187,7 +171,5 @@ def task_4__powerbi_report(context: dg.AssetExecutionContext) -> None:
         required_resource_keys={"databricks"}
         )
 def task_1__invoke_databricks_workflow(context: dg.AssetExecutionContext) -> None:
-    # use to demonstrate error handling
-    #raise Exception("Error Invoking Databricks workflow for workflow d")
     databricks = context.resources.databricks
     launch_and_poll_databricks_job(context, databricks, 733330858351118)
