@@ -1,4 +1,5 @@
 from dagster import Definitions, load_assets_from_modules, EnvVar, AssetKey, AssetSpec
+from dagster._core.definitions.asset_dep import coerce_to_deps_and_check_duplicates
 
 from azure_demo import assets
 from azure_demo.resources import AzureFunctionResource, AzureDataFactoryResource, adls2_resource, databricks_client_instance, pipes_databricks_client
@@ -15,28 +16,15 @@ from dagster_powerbi import PowerBIServicePrincipal, PowerBIToken, PowerBIWorksp
 
 all_assets = load_assets_from_modules([assets])
 
-#, deps=[*upstream.deps]
- #, AssetKey("task_2__invoke_workflow_d"), AssetKey("task_3__databricks_notebook_b1_north_eu")
 class MyCustomPowerBITranslator(DagsterPowerBITranslator):
     def get_dashboard_spec(self, data) -> AssetSpec:
         upstream = super().get_dashboard_spec(data)
         
         # example of replacing the group_name for a powerbi asset
         if upstream.key == AssetKey(["dashboard","hooli_example"]):
-            print(*upstream.deps)
-            return upstream._replace(group_name="workflow_b", deps=[*upstream.deps])
+            return upstream._replace(group_name="workflow_b", deps=coerce_to_deps_and_check_duplicates([*upstream.deps, AssetKey("task_2__invoke_workflow_d"), AssetKey("task_3__databricks_notebook_b1_north_eu")], key=upstream.key ))
         return upstream
 
-    # def get_dashboard_spec(self, data) -> AssetSpec:
-    #     upstream = super().get_dashboard_spec(data)
-        
-    #     #, AssetKey("task_2__invoke_workflow_d"), AssetKey("task_3__databricks_notebook_b1_north_eu")
-    #     if upstream.key == AssetKey(["dashboard","hooli_example"]):
-    #         print(*upstream.deps)
-    #         return upstream._replace(deps=[*upstream.deps, AssetKey("task_2__invoke_workflow_d")])
-
-    #     return upstream
-    
 # Connect using a service principal
 resource = PowerBIWorkspace(
     credentials=PowerBIServicePrincipal(
